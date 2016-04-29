@@ -149,6 +149,9 @@ strong {
                 <input type="checkbox" name="check-box" id="7500w" /> <span>1:7500万全球构造分布图</span>
             </li>
             <li>
+                <input type="checkbox" name="check-box" id="sx" /> <span>属性</span>
+            </li>
+            <li>
                 <input type="button" value="画线" onclick="Polyline()" style="width:30px;height:auto"/>
             </li>
         </ul>
@@ -190,8 +193,15 @@ strong {
         map.addLayer(basemap);
         var annolayer = new TDTAnnoLayer();
         map.addLayer(annolayer);
-        navDraw = new esri.toolbars.Draw(map);
-        dojo.connect(navDraw, "onDrawEnd", doMeasure);      
+        navDraw = new Draw(map);
+        var sls = new SimpleLineSymbol(
+   SimpleLineSymbol.STYLE_DASH,
+   new Color([255, 0, 0]),
+   3
+ );
+        navDraw.setLineSymbol(sls)
+        navDraw.on("draw-end", addToMap);
+        //dojo.connect(navDraw, "onDrawEnd", doMeasure);      
         dojo.declare("myWMSLayer", esri.layers.DynamicMapServiceLayer, {
                 constructor: function () {
                     this.initialExtent = this.fullExtent = new esri.geometry.Extent({ "xmin": -180, "ymin":-90, "xmax": 180, "ymax": 90, "spatialReference": { "wkid": 4326 } });
@@ -211,23 +221,43 @@ strong {
                         bgcolor: "0xFFFFFF",
                         version: "1.1.1",
                         layers: "0",
-                       
-
-                        //changing values
                         srs: "EPSG:" + extent.spatialReference.wkid,
                         width: width,
                         height: height,
                         bbox: extent.xmin + "," + extent.ymin + "," + extent.xmax + "," + extent.ymax,                
                     };
-
                     callback("http://219.142.81.85/arcgis/services/0refield/MapServer/WMSServer?" + dojo.objectToQuery(params));
                 }
-            });
-        
+        });
 
+        dojo.declare("myWMSLayer", esri.layers.DynamicMapServiceLayer, {
+            constructor: function () {
+                this.initialExtent = this.fullExtent = new esri.geometry.Extent({ "xmin": -180, "ymin": -90, "xmax": 180, "ymax": 90, "spatialReference": { "wkid": 4326 } });
+                this.spatialReference = new esri.SpatialReference({ wkid: 4326 });
+
+                this.loaded = true;
+                this.onLoad(this);
+            },
+            getImageUrl: function (extent, width, height, callback) {
+                var params = {
+                    service: "WMS",
+                    request: "GetMap",
+                    transparent: true,
+                    format: "image/png",
+                    styles: "",
+                    bgcolor: "0xFFFFFF",
+                    version: "1.1.1",
+                    layers: "0",
+                    srs: "EPSG:" + extent.spatialReference.wkid,
+                    width: width,
+                    height: height,
+                    bbox: extent.xmin + "," + extent.ymin + "," + extent.xmax + "," + extent.ymax,
+                };
+                callback("http://219.142.81.85/arcgis/services/0refield/MapServer/WMSServer?" + dojo.objectToQuery(params));
+            }
+        });
         var myWmsLayer = new myWMSLayer();
-        map.addLayer(myWmsLayer);
-        
+        map.addLayer(myWmsLayer);    
         
         dojo.declare("Mylayer", TDTLayer, {
             getTileUrl: function (level, row, col) {
@@ -348,6 +378,44 @@ strong {
         }
     });
 
+    $('sx').on('click', function () {
+        var c = $('#sx').is(':checked');
+        if (c) {
+            map.on("click", function () {
+                dojo.declare("myWMSLayer", esri.layers.DynamicMapServiceLayer, {
+                    constructor: function () {
+                        this.initialExtent = this.fullExtent = new esri.geometry.Extent({ "xmin": -180, "ymin": -90, "xmax": 180, "ymax": 90, "spatialReference": { "wkid": 4326 } });
+                        this.spatialReference = new esri.SpatialReference({ wkid: 4326 });
+
+                        this.loaded = true;
+                        this.onLoad(this);
+                    },
+                    getImageUrl: function (extent, width, height, callback) {
+                        var params = {
+                            service: "WMS",
+                            request: "getfeatureinfo",
+                            transparent: true,
+                            format: "xml/html",                      
+                            version: "1.1.1",
+                            layers: "0",
+                            srs: "EPSG:" + extent.spatialReference.wkid,
+                            width: width,
+                            height: height,
+                            bbox: extent.xmin + "," + extent.ymin + "," + extent.xmax + "," + extent.ymax,
+                        };
+                        callback("http://219.142.81.85/arcgis/services/0refield/MapServer/WMSServer?" + dojo.objectToQuery(params));
+                    }
+                });
+                var myWmsLayer = new myWMSLayer();
+                map.addLayer(myWmsLayer);
+            });
+           
+        }
+        else {
+           
+        }
+    });
+
     function doMeasure(geometry) {
         //更加类型设置显示样式
         measuregeometry = geometry;
@@ -402,9 +470,22 @@ strong {
         map.graphics.add(graphic);
         //进行投影转换，完成后调用projectComplete
     }
+
+    function addToMap(evt) {
+        var symbol;
+        navDraw.deactivate();
+        map.showZoomSlider();
+        switch (evt.geometry.type) { 
+            case "polyline":
+                symbol = new esri.symbol.SimpleLineSymbol();
+                break;    
+        }
+        var graphic = new esri.Graphic(evt.geometry, symbol);
+        map.graphics.add(graphic);
+    }
+    
     function Polyline() {
-        navDraw.activate(esri.toolbars.Draw.POLYLINE);
-        
+        navDraw.activate(esri.toolbars.Draw.POLYLINE);       
     }
     </script>
    
