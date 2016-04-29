@@ -191,21 +191,43 @@ strong {
         var annolayer = new TDTAnnoLayer();
         map.addLayer(annolayer);
         navDraw = new esri.toolbars.Draw(map);
-        dojo.connect(navDraw, "onDrawEnd", doMeasure);
-        //var resourceInfo = {
-        //    extent: new Extent(19.89361, 10, 190.10638, 60, new SpatialReference({ wkid: 4326 })),
-        //    maxHeight: 376,
-        //    maxWidth:1280,
-        //    layerInfos: [],
-        //    version: '1.1.1'
-        //};
-        //var agsWmsUrl = "http://219.142.81.85/arcgis/services/0refield/MapServer/WMSServer";
-        //var agsWmsLayer = new WMSLayer(agsWmsUrl, { resourceInfo: resourceInfo});
-        //agsWmsLayer.setImageFormat("png");
-        //agsWmsLayer.setVisibleLayers([0]);
-        //map.addLayer(agsWmsLayer);
-       // var wmslayer = new WMSLayer("http://219.142.81.85/arcgis/services/0refield/MapServer/WMSServer?service=WMS&request=GetMap&width=1280&height=376&format=image/png&layers=0&styles=&bgcolor=0xFFFFFF&transparent=true&version=1.1.1&SRS=EPSG:4326&bbox=19.8936170212766,10,190.106382978723,60");
-       // map.addLayer(wmslayer);
+        dojo.connect(navDraw, "onDrawEnd", doMeasure);      
+        dojo.declare("myWMSLayer", esri.layers.DynamicMapServiceLayer, {
+                constructor: function () {
+                    this.initialExtent = this.fullExtent = new esri.geometry.Extent({ "xmin": -180, "ymin":-90, "xmax": 180, "ymax": 90, "spatialReference": { "wkid": 4326 } });
+                    this.spatialReference = new esri.SpatialReference({ wkid: 4326 });
+
+                    this.loaded = true;
+                    this.onLoad(this);
+                },
+
+                getImageUrl: function (extent, width, height, callback) {
+                    var params = {
+                        service:"WMS",
+                        request: "GetMap",
+                        transparent: true,
+                        format: "image/png",
+                        styles: "",
+                        bgcolor: "0xFFFFFF",
+                        version: "1.1.1",
+                        layers: "0",
+                       
+
+                        //changing values
+                        srs: "EPSG:" + extent.spatialReference.wkid,
+                        width: width,
+                        height: height,
+                        bbox: extent.xmin + "," + extent.ymin + "," + extent.xmax + "," + extent.ymax,                
+                    };
+
+                    callback("http://219.142.81.85/arcgis/services/0refield/MapServer/WMSServer?" + dojo.objectToQuery(params));
+                }
+            });
+        
+
+        var myWmsLayer = new myWMSLayer();
+        map.addLayer(myWmsLayer);
+        
         
         dojo.declare("Mylayer", TDTLayer, {
             getTileUrl: function (level, row, col) {
