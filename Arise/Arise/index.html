@@ -119,13 +119,13 @@ strong {
 </head>
 
 <body >
-    <div class="wrapper">
+    <div class="wrapper" style="display:none">
         <ul>
             <li>
                 <p>图层选择:</p>
             </li>
             <li>
-                <input type="checkbox" name="check-box" id="layer" checked="checked" /> <span>动态比例尺中国地质图</span>
+                <input type="checkbox" name="check-box" id="layer"  /> <span>动态比例尺中国地质图</span>
             </li>
             <li>
                 <input type="checkbox" name="check-box" id="25w" /> <span>1:25万中国地质图</span>
@@ -149,14 +149,14 @@ strong {
                 <input type="checkbox" name="check-box" id="7500w" /> <span>1:7500万全球构造分布图</span>
             </li>
             <li>
-                <input type="checkbox" name="check-box" id="sx" /> <span>属性</span>
+                <input type="checkbox" name="check-box" id="sx" checked="checked"/> <span>属性</span>
             </li>
             <li>
                 <input type="button" value="画线" onclick="Polyline()" style="width:30px;height:auto"/>
             </li>
         </ul>
     </div>
-    <div id="map" style="height:700px"></div>
+    <div id="map" style="height:100%;width:100%"></div>
     <script src="js/jquery.js"></script>
     <script type="text/javascript">
     var map, mylayer;
@@ -195,7 +195,7 @@ strong {
         map.addLayer(annolayer);
         navDraw = new Draw(map);
         navDraw.on("draw-end", addToMap);
-        dojo.connect(map, "click", myOnClickHandler);
+        dojo.connect(map, "onClick", myOnClickHandler);
         //dojo.connect(navDraw, "onDrawEnd", doMeasure);      
         dojo.declare("myWMSLayer", esri.layers.DynamicMapServiceLayer, {
                 constructor: function () {
@@ -260,7 +260,7 @@ strong {
             }
         });
         Mylayer = new Mylayer();
-        map.addLayer(Mylayer);
+      //  map.addLayer(Mylayer);
        
 
         dojo.declare("Mylayer25", TDTLayer, {
@@ -390,24 +390,32 @@ strong {
                 this.onLoad(this);
             },
             getImageUrl: function (extent, width, height, callback) {
-                var params = {
-                    service: "WMS",
+                var e = mouseEvent || window.event;
+                var scrollX = document.documentElement.scrollLeft || document.body.scrollLeft;
+                var scrollY = document.documentElement.scrollTop || document.body.scrollTop;
+                var x = e.pageX || e.clientX + scrollX;
+                var y = e.pageY || e.clientY + scrollY;
+                var params = {                    
                     request: "getfeatureinfo",
                     transparent: true,
                     format: "xml/html",
                     version: "1.1.1",
                     layers: "0",
+                    query_layers:"0",
                     srs: "EPSG:" + extent.spatialReference.wkid,
-                    X:mouseEvent.clientX,
-                    Y: mouseEvent.clientY,
+                    X:x,
+                    Y:y,
                     height: height,
+                    width:width,
                     bbox: extent.xmin + "," + extent.ymin + "," + extent.xmax + "," + extent.ymax,
+                    query_layers:"0"
                 };
                 callback("http://219.142.81.85/arcgis/services/0refield/MapServer/WMSServer?" + dojo.objectToQuery(params));
             }
         });
         var myWmsLayer = new myWMSLayer();
-        alert(myWmsLayer.toString());
+        alert(myWmsLayer);
+        map.addLayer(myWmsLayer);        
     }
 
     function doMeasure(geometry) {
